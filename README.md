@@ -1,3 +1,5 @@
+For main controller code - Everything works currently, but there's an Issue when trying to make the code more efficient. Using a loop to repeat code for easy, med, and hard messes up wireless communication. Will try to update with more efficient code, reducing the lines to 400-500.
+
 # Interactive-shooting-game
 
 
