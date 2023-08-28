@@ -2,27 +2,29 @@
 #include <WiFi.h>
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
-#include <SevSeg.h>
 // Set the LCD address to 0x27 for a 16 chars and 2 line display
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 //pins 21 and 22 used for lcd
 //pins
 int button1 = 12;
 int button2 = 13;
+int button3 = 5;
 int buzzer = 15;
 //sev seg
-int a = 23;
+int a = 19;
 int b = 18;
 int c = 26;
 int d = 25;
 int e = 33;
-int f = 19;
+int f = 23;
 int g = 27;
-int d1 = 4;
-int d4 = 14;
+
 //buttons
 int lastbuttonState1 = HIGH;
 int lastbuttonState2 = HIGH;
+int lastbuttonState3 = HIGH;
+
+
 //menu
 bool onePlayer = false;
 bool twoPlayer = false;
@@ -31,20 +33,23 @@ bool med = false;
 bool hard = false;
 bool options = true; 
 bool menuMusic = true;
+bool restart = false;
 //  counters 
+int score1=0;
 int s = 0;
 int i = 0;
 int n = 0;
 int m = 0;
-//timing
-unsigned long interval = 0;
-unsigned long last = 0;
+int b3 = 0;
+
 // communication
+bool roundTwo = false;
 bool messageRE = false;
 bool cUpdated = false;
 
+
 //random generator
-int test[9] = {2,3,1,3,2,1,3,2};
+//int test[9] = {2,3,1,3,2,1,3,2};
 int sequence[9] ={};
 void randomNumbers(int array[], int size, int min, int max)
 {
@@ -52,7 +57,6 @@ void randomNumbers(int array[], int size, int min, int max)
   {
     array[r] = random(min, max + 1);
     
-    // Check if the current random number is equal to the previous number
     while (r > 0 && array[r] == array[r - 1])
     {
       array[r] = random(min, max + 1);
@@ -107,15 +111,6 @@ void setup() {
   pinMode(e,OUTPUT);
   pinMode(f,OUTPUT);
   pinMode(g,OUTPUT);
-  pinMode(d1,OUTPUT);
-
-
-
-
-
-
-
-  
 
 // print random numbers 
   randomNumbers(sequence, 9, 1, 3);
@@ -125,7 +120,6 @@ void setup() {
 }
 
   
-
 // receiving message
 void receiveCallback(const uint8_t *macAddr, const uint8_t *data, int dataLen) {
 
@@ -136,18 +130,18 @@ void receiveCallback(const uint8_t *macAddr, const uint8_t *data, int dataLen) {
     cUpdated = false;
   }
   
-if (!cUpdated)
+if (!cUpdated && i<9)
 {
   if (message == "sensor:Triggered")
   {
     digitalWrite(buzzer,HIGH);
   delay(200);
   digitalWrite(buzzer,LOW);
-    i++;
+   
     s++;
     messageRE = true;
 
-    
+     i++;
       cUpdated = true;
   }
   else if (message == "timeFailed") 
@@ -164,10 +158,11 @@ if (!cUpdated)
 
 void loop() {
  Serial.println(i);
+  Serial.println(b3);
+
  // Serial.println(cUpdated);
   unsigned long current = millis();
   int button1state = digitalRead(button1);
-  // Turn on LED on ESP32 #2
   if (button1state == LOW && lastbuttonState1 == HIGH)
    { n ++;
    digitalWrite(buzzer,HIGH);
@@ -196,7 +191,7 @@ digitalWrite(buzzer,LOW);
   menuMusic = false;
   }
 
-   if (n == 1 )
+   if (n == 1)
 {  
   lcd.clear();
   lcd.setCursor(0,0);
@@ -231,14 +226,16 @@ if (n == 2 && m == 1)
 lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Easy Med or Hard");
+  n = 4;
 }
-/*if (n == 3 && m == 1)
+if (n == 3 && m == 1)
 {
+    onePlayer = true;
   twoPlayer = true;
-lcd.clear();
+  lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Easy Med or Hard");
-}*/
+}
 if (m>1 && n<1)
 {
 m =1;
@@ -267,26 +264,23 @@ if (n>6 && m==1)
   n = 4;
 }
 
-if (n== 4 and m == 2)
+if (n== 4 && m == 2)
 {
   easy = true;
-   interval = 6000;
 }
-if (n== 5 and m == 2)
+if (n== 5 && m == 2)
 {
   med = true;
-    interval = 4000;
 
 }
-if (n== 6 and m == 2)
+if (n== 6 && m == 2)
 {
   hard = true;
-     interval = 2000;
 
 }
 
 if (onePlayer && easy)
-{
+{ 
   if(options)
   {
 lcd.clear();
@@ -318,53 +312,43 @@ lcd.clear();
 if (s == 0)
     { 
       zero();
-      digit1();
     }
 
     else if(s == 1)
     {
       one();
-      digit1();
     }
     else if(s == 2)
     {
       two();
-      digit1();
     }
      else if(s == 3)
     {
       three();
-      digit1();
     }
      else if(s == 4)
     {
       four();
-      digit1();
     }
      else if(s == 5)
     {
       five();
-      digit1();
     }
      else if(s == 6)
     {
       six();
-      digit1();
     }
      else if(s == 7)
     {
       seven();
-      digit1();
     }
      else if(s == 8)
     {
       eight();
-      digit1();
     }
      else if(s == 9)
     {
       nine();
-      digit1();
     }
   //Serial.print(interval);
   if (sequence[i] == 1 && !cUpdated)
@@ -385,7 +369,7 @@ if (s == 0)
    esp_now_send(receiver4Address, nodeOn, sizeof(nodeOn));
 
   }
-  if (messageRE)
+  if (messageRE && i<9)
   {   
 
     
@@ -396,7 +380,7 @@ if (s == 0)
    Serial.println("Node OFF message SENT");
     messageRE = false;
   }
-  if(i == 9)
+  if(i == 9 && !twoPlayer)
   {
      uint8_t menuMusicOff[] = "menuMusicOff";
   esp_now_send(receiver5Address, menuMusicOff, sizeof(menuMusicOff));
@@ -407,13 +391,76 @@ if (s == 0)
     lcd.setCursor(0,1);
     lcd.print("Try again!" );
   }
+  if(i==9 && twoPlayer && !restart)
+  {
+  int button3state = digitalRead(button3);
+  if (button3state == LOW && lastbuttonState3 == HIGH)
+   { b3 ++;
+   digitalWrite(buzzer,HIGH);
+delay(200);
+digitalWrite(buzzer,LOW);
+     }
+    lastbuttonState3 = button3state;
+    
+    score1 = s;
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 2's turn!");
+    lcd.setCursor(0,1);
+    lcd.print("Press to start!");
+
+    if(b3==1)
+    { 
+      restart = true;
+      i=0;
+      s=0;
+      lcd.clear();
+      lcd.print("SHOOT!!!");
+    }
+  }
+    if(i==9 && restart)
+    {
+      uint8_t menuMusicOff[] = "menuMusicOff";
+  esp_now_send(receiver5Address, menuMusicOff, sizeof(menuMusicOff));
+if(score1>s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 1 wins");
+    lcd.setCursor(0,1);
+    lcd.print("Score:" );
+    lcd.setCursor(7,1);
+    lcd.print(score1);
+}
+if(score1<s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 2 wins");
+    lcd.setCursor(0,1);
+    lcd.print("Score:" );
+    lcd.setCursor(7,1);
+    lcd.print(s);
+}
+if(score1 == s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Its a tie!");
+    lcd.setCursor(0,1);
+    lcd.print("Play again" );
+   
 }
 
+    }
+  }
 
 if (onePlayer && med)
 {
+  
   if(options)
   {
+    
 lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Game starting...");
@@ -443,53 +490,43 @@ lcd.clear();
 if (s == 0)
     { 
       zero();
-      digit1();
     }
 
     else if(s == 1)
     {
       one();
-      digit1();
     }
     else if(s == 2)
     {
       two();
-      digit1();
     }
      else if(s == 3)
     {
       three();
-      digit1();
     }
      else if(s == 4)
     {
       four();
-      digit1();
     }
      else if(s == 5)
     {
       five();
-      digit1();
     }
      else if(s == 6)
     {
       six();
-      digit1();
     }
      else if(s == 7)
     {
       seven();
-      digit1();
     }
      else if(s == 8)
     {
       eight();
-      digit1();
     }
      else if(s == 9)
     {
       nine();
-      digit1();
     }
   //Serial.print(interval);
   if (sequence[i] == 1 && !cUpdated)
@@ -510,7 +547,7 @@ if (s == 0)
    esp_now_send(receiver4Address, nodeOn, sizeof(nodeOn));
 
   }
-  if (messageRE)
+  if (messageRE && i<9)
   {   
 
     
@@ -521,7 +558,7 @@ if (s == 0)
    Serial.println("Node OFF message SENT");
     messageRE = false;
   }
-  if(i == 9)
+  if(i == 9 && !twoPlayer)
   {
      uint8_t menuMusicOff[] = "menuMusicOff";
   esp_now_send(receiver5Address, menuMusicOff, sizeof(menuMusicOff));
@@ -532,6 +569,68 @@ if (s == 0)
     lcd.setCursor(0,1);
     lcd.print("Try again!" );
   }
+  if(i==9 && twoPlayer && !restart)
+  {
+  int button3state = digitalRead(button3);
+  if (button3state == LOW && lastbuttonState3 == HIGH)
+   { b3 ++;
+   digitalWrite(buzzer,HIGH);
+delay(200);
+digitalWrite(buzzer,LOW);
+     }
+    lastbuttonState3 = button3state;
+    
+    score1 = s;
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 2's turn!");
+    lcd.setCursor(0,1);
+    lcd.print("Press to start!");
+
+    if(b3==1)
+    { 
+      restart = true;
+      i=0;
+      s=0;
+      lcd.clear();
+      lcd.print("SHOOT!!!");
+    }
+  }
+    if(i==9 && restart)
+    {
+      uint8_t menuMusicOff[] = "menuMusicOff";
+  esp_now_send(receiver5Address, menuMusicOff, sizeof(menuMusicOff));
+if(score1>s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 1 wins");
+    lcd.setCursor(0,1);
+    lcd.print("Score:" );
+    lcd.setCursor(7,1);
+    lcd.print(score1);
+}
+if(score1<s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 2 wins");
+    lcd.setCursor(0,1);
+    lcd.print("Score:" );
+    lcd.setCursor(7,1);
+    lcd.print(s);
+}
+if(score1 == s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Its a tie!");
+    lcd.setCursor(0,1);
+    lcd.print("Play again" );
+   
+}
+
+    }
 }
 if (onePlayer && hard)
 {
@@ -566,53 +665,43 @@ lcd.clear();
 if (s == 0)
     { 
       zero();
-      digit1();
     }
 
     else if(s == 1)
     {
       one();
-      digit1();
     }
     else if(s == 2)
     {
       two();
-      digit1();
     }
      else if(s == 3)
     {
       three();
-      digit1();
     }
      else if(s == 4)
     {
       four();
-      digit1();
     }
      else if(s == 5)
     {
       five();
-      digit1();
     }
      else if(s == 6)
     {
       six();
-      digit1();
     }
      else if(s == 7)
     {
       seven();
-      digit1();
     }
      else if(s == 8)
     {
       eight();
-      digit1();
     }
      else if(s == 9)
     {
       nine();
-      digit1();
     }
   //Serial.print(interval);
   if (sequence[i] == 1 && !cUpdated)
@@ -633,7 +722,7 @@ if (s == 0)
    esp_now_send(receiver4Address, nodeOn, sizeof(nodeOn));
 
   }
-  if (messageRE)
+  if (messageRE && i<9)
   {   
 
     
@@ -644,7 +733,7 @@ if (s == 0)
    Serial.println("Node OFF message SENT");
     messageRE = false;
   }
-  if(i == 9)
+  if(i == 9 && !twoPlayer)
   {
      uint8_t menuMusicOff[] = "menuMusicOff";
   esp_now_send(receiver5Address, menuMusicOff, sizeof(menuMusicOff));
@@ -655,8 +744,70 @@ if (s == 0)
     lcd.setCursor(0,1);
     lcd.print("Try again!" );
   }
+  if(i==9 && twoPlayer && !restart)
+  {
+  int button3state = digitalRead(button3);
+  if (button3state == LOW && lastbuttonState3 == HIGH)
+   { b3 ++;
+   digitalWrite(buzzer,HIGH);
+delay(200);
+digitalWrite(buzzer,LOW);
+     }
+    lastbuttonState3 = button3state;
+    
+    score1 = s;
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 2's turn!");
+    lcd.setCursor(0,1);
+    lcd.print("Press to start!");
+
+    if(b3==1)
+    { 
+      restart = true;
+      i=0;
+      s=0;
+      lcd.clear();
+      lcd.print("SHOOT!!!");
+    }
+  }
+    if(i==9 && restart)
+    {
+      uint8_t menuMusicOff[] = "menuMusicOff";
+  esp_now_send(receiver5Address, menuMusicOff, sizeof(menuMusicOff));
+if(score1>s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 1 wins");
+    lcd.setCursor(0,1);
+    lcd.print("Score:" );
+    lcd.setCursor(7,1);
+    lcd.print(score1);
+}
+if(score1<s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Player 2 wins");
+    lcd.setCursor(0,1);
+    lcd.print("Score:" );
+    lcd.setCursor(7,1);
+    lcd.print(s);
+}
+if(score1 == s)
+{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Its a tie!");
+    lcd.setCursor(0,1);
+    lcd.print("Play again" );
+   
 }
 
+    }
+
+}
 }
 void zero(){
 digitalWrite(a, HIGH);
@@ -747,16 +898,6 @@ digitalWrite(d, LOW);
 digitalWrite(e, LOW);
 digitalWrite(f, HIGH);
 digitalWrite(g, HIGH);
-  }
-  void digit1()
-  {
-    digitalWrite(d1,LOW);
-    digitalWrite(d4,HIGH);
-  }
-  void digit4()
-  {
-    digitalWrite(d1,HIGH);
-    digitalWrite(d4,LOW);
   }
   
   
