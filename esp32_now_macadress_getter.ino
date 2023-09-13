@@ -1,13 +1,4 @@
-/*
-  ESP32 MAC Address printout
-  esp32-mac-address.ino
-  Prints MAC Address to Serial Monitor
- 
-  DroneBot Workshop 2022
-  https://dronebotworkshop.com
-*/
- 
-// Include WiFi Library
+
 #include "WiFi.h"
  
 void setup() {
