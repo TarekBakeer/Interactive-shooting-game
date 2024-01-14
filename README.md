@@ -1,4 +1,6 @@
 #Airsoft target shooting game.
+*****************I MADE THIS PROJECT BEFORE I HAD KNOWLEDGE OF OBJECT-ORIENTED PROGRAMMING. LOTS OF THIS CODE IS REPETITIVE BUT IT WORKS :)*********************************
+
 Players select difficulty and mode from an LCD menu using buttons.
 LED targets randomly light up and stay on based on selected difficulty (2 sec for hard, 4 sec for medium, 6 sec for easy).
 Hitting a target before it turns off updates the score and triggers a new target.
